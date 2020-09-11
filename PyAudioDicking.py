@@ -7,48 +7,67 @@ import pyaudio
 import wave
 import numpy as np
 import scipy.fftpack as sf
+import struct
+import math
 
 
 pa=pyaudio.PyAudio()
 
-CHUNK=2*4096
-DEVICE=2
-FREQUENCY=44100
+CHUNK=2*2048
+DEVICE=7
+SRATE=44100
+
+dtones = [[1100,440],[1200,330],[880,750]]
+tolerance = .01
+detect=0
 
 stream=pa.open(
     format=pyaudio.paInt16,
     channels=1,
-    rate=FREQUENCY,
+    rate=SRATE,
     output=False,
     input=True,
-    input_device_index=DEVICE,
+    # input_device_index=DEVICE,
     frames_per_buffer=CHUNK)
 
-def maxFrequency(X, F_sample, Low_cutoff=300, High_cutoff= 2000):
-        """ Searching presence of frequencies on a real signal using FFT
-        Inputs
-        =======
-        X: 1-D numpy array, the real time domain audio signal (single channel time series)
-        Low_cutoff: float, frequency components below this frequency will not pass the filter (physical frequency in unit of Hz)
-        High_cutoff: float, frequency components above this frequency will not pass the filter (physical frequency in unit of Hz)
-        F_sample: float, the sampling frequency of the signal (physical frequency in unit of Hz)
-        """
+def rms( data ):
+    count = len(data)/2
+    format = "%dh"%(count)
+    shorts = struct.unpack( format, data )
+    sum_squares = 0.0
+    for sample in shorts:
+        n = sample * (1.0/32768)
+        sum_squares += n*n
+    return math.sqrt( sum_squares / count )
+
+def maxFrequency(X, F_sample):
 
         M = X.size # let M be the length of the time series
-        Spectrum = sf.rfft(X, n=M)
-        [Low_cutoff, High_cutoff, F_sample] = map(float, [Low_cutoff, High_cutoff, F_sample])
-
-        #Convert cutoff frequencies into points on spectrum
-        [Low_point, High_point] = map(lambda F: F/F_sample * M, [Low_cutoff, High_cutoff])
-
-        maximumFrequency = np.where(Spectrum == np.max(Spectrum[Low_point : High_point])) # Calculating which frequency has max power.
-
-        return maximumFrequency
+        S = sf.rfft(X, n=M)
+        freqs = sf.rfftfreq(len(S))
+        idx=np.argmax(np.abs(S))
+        freq = freqs[idx]
+        freqHz = abs(freq*F_sample)
+        return freqHz
 
 stream.start_stream()
 
 while True:
     data = stream.read(CHUNK)
-    indata = np.fromstring(data)
+    indata = np.frombuffer(data, dtype=np.int16)
+    # intensity = abs(sp.fft(indata))[:CHUNK/2]
+    # frequencies= np.linspace(0.0, float(SRATE)/2, num=CHUNK/2)
 
-    print(maxFrequency(indata, FREQUENCY))
+
+    # for i in range(0,32):
+    #     a0 = np.fromstring(data,dtype=np.int16)[i::6]
+    #     a = a0.tostring()
+    if (rms(data) > .05): #make sure we have a signal
+        # print (rms(data))
+        rnFreq=maxFrequency(indata, SRATE)
+        print (rnFreq)
+        if (np.isclose(rnFreq, dtones[0], tolerance)):
+            print("tone detected")
+
+    # print(maxFrequency(indata, FREQUENCY))
+    # print(rms(a))
