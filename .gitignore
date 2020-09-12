@@ -127,3 +127,14 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# extra ignores for this program
+AMR/*
+MP3/*
+WAV/*
+ffmpeg.exe
+
+# exceptions
+!AMR/.gitkeep
+!MP3/.gitkeep
+!WAV/.gitkeep
