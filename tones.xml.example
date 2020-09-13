@@ -1,0 +1,23 @@
+<tones>
+   <department name="Chichest Fire Rescue">
+      <recordDelay>2.5</recordDelay>
+      <maxDeadSpace>5</maxDeadSpace>
+      <ToneA>
+         <freq>1670</freq>
+         <dur>0.6</dur>
+      </ToneA>
+      <ToneB>
+         <freq>1180</freq>
+         <dur>0.6</dur>
+      </ToneB>
+      <txtEmails>
+         <e name="Kyle Phone">6032192080@vtext.com</e>
+      </txtEmails>
+      <mp3Emails>
+         <e name="Kyle Email">kk9michaels@gmail.com</e>
+      </mp3Emails>
+      <amrEmails>
+         <e name="Kyle Phone">6032192080@vzwpix.com</e>
+      </amrEmails>
+   </department>
+</tones>

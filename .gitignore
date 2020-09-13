@@ -133,6 +133,7 @@ AMR/*
 MP3/*
 WAV/*
 ffmpeg.exe
+tones.xml
 
 # exceptions
 !AMR/.gitkeep
