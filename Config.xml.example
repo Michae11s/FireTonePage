@@ -1,0 +1,7 @@
+<Config>
+   <Email>
+      <account>email@example.com</account>
+      <pword>thisisapassword</pword>
+      <server port="465">smtp.gmail.com</server>
+   </Email>
+</Config>

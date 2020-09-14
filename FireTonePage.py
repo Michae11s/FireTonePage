@@ -1,4 +1,4 @@
-# just dicking around with py audio, hopefully we can get a working FFT
+# just dicking around with py audio, hopefully we can get a working FF
 
 #imports
 import os
@@ -10,6 +10,14 @@ import scipy.fftpack as sf
 import struct
 import math
 import xml.etree.ElementTree as ET
+import smtplib
+import ssl
+import email
+
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from pydub import AudioSegment as ast
 from pydub.utils import which
@@ -34,8 +42,20 @@ TLRNC = .01 #tone tolerance, percentage was a tone can be and still be recognize
 #NON EDITABLE GLOBAL VARS
 FORMAT=pyaudio.paInt16
 
+#EMAIL VARS
+#### TODO, IMPORT THEM #####
+#Import Email settings (basically setup for ssl gmail)
+tee=ET.parse("config.xml")
+root=tee.getroot()
+email=root.find("Email")
+SERVER=email.find("server").text
+PORT=email.find("server").get("port")
+ADDR=email.find("account").text
+PWORD=email.find("pword").text
+context = ssl.create_default_context()
+
 class toneSet(object):
-    def __init__(self, name="default", tonesA=[1100,.6], tonesB=[440,.8], amrEmails=[], txtEmails=[], mp3Emails=[], rDelay=0.0, DeadSpace=5.0):
+    def __init__(self, name="default", tonesA=[1100,.6], tonesB=[440,.8], amrEmails=["6032192080@vzwpix.com","kk9michaels@gmail.com"], txtEmails=[], mp3Emails=["kk9michaels@gmail.com"], rDelay=0.0, DeadSpace=5.0):
         #Vals from arguments
         self.name=name                      # tone set name, things such as Chichester Fire, Tritown Ambulance, etc
         self.tones=[tonesA, tonesB]         # list of tone lists, tones will be in format [freq, duration]
@@ -96,8 +116,45 @@ class toneSet(object):
         # if we made it to here we failed to fully detect a tone so exit without a recognition
         return False
 
-    def sendEmails(self, EmailList, type): #type can be "pre" "mp3" "amr"
-        print("EMAILS SENT")
+    def sendEmails(self, type): #type can be "pre" "mp3" "amr"
+        #Setup the email
+        subject= "[TONE] " + self.name
+        body= "Page recieved for: " + self.name + "\n at " + self.rstart.strftime("%H:%M:%S on %m/%d/%y")
+        message = MIMEMultipart()
+        message["From"] = ADDR
+        message["To"] = ADDR
+        message["Subject"] = subject
+        message.attach(MIMEText(body, 'plain'))
+
+        #differentiate base on type
+        if (type=="pre"):
+            elist=self.txt
+        else:
+            if(type=="mp3"):
+                elist=self.mp3
+                fname=self.fileName("mp3")
+            else:
+                elist=self.amr
+                fname=self.fileName("amr")
+            with open(fname, 'rb') as attachment:
+                part = MIMEBase("application", "octet-stream")
+                part.set_payload(attachment.read())
+            encoders.encode_base64(part)
+            part.add_header(
+                "Content-Disposition",
+                f"attachment; filename= {fname[4:]}",
+            )
+            message.attach(part)
+
+        #send the emails
+        with smtplib.SMTP_SSL(SERVER, PORT, context=context) as server:
+            server.login(ADDR, PWORD)
+            for recipient in elist:
+                message["Bcc"] = recipient
+                text=message.as_string()
+                server.sendmail(ADDR, recipient, text)
+
+        print("EMAILS SENT:" + type.upper())
         #SEND EMAILS HERE
 
     def startRecord(self):
@@ -106,7 +163,7 @@ class toneSet(object):
         self.rstart=dt.now() #hold the time we started recording, so we can delay when we actually start recording
         #self.fileName= self.name + "-" + self.rstart.strftime("%m%d%y-%H%M%S")
         print("recording started:" + self.fileName())
-        self.sendEmails(self.txt, "pre") #lets send out the pre alert
+        self.sendEmails("pre") #lets send out the pre alert
 
     def record(self, data):
         now=dt.now()
@@ -121,7 +178,7 @@ class toneSet(object):
 
     def stopRecord(self):
         self.recording=False #change the recording flag
-        self.frames = self.frames[:-(int(self.maxDeadSpace*10))] #lets subtract the deadspace, which is time*(frames/sec==10)
+        self.frames = self.frames[:-(int((self.maxDeadSpace*10)-30))] #lets subtract the deadspace, which is time*(frames/sec==10)
         print("Stopped Recording: " + self.fileName("wav"))
 
         #lets actually writeout the file
@@ -136,8 +193,10 @@ class toneSet(object):
         hold=ast.from_wav(self.fileName("wav"))
         hold.export(self.fileName("mp3"), format="mp3")
         print("MP3 generated:" + self.fileName("mp3"))
+        self.sendEmails("mp3")
         hold.export(self.fileName("amr"), format="amr", parameters=["-ar", "8000", "-ab", "12.2k"])
         print("AMR generated:" + self.fileName("amr"))
+        self.sendEmails("amr")
 
         #clear out our recording buffer
         self.frames=[]
