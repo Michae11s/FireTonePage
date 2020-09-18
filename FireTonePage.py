@@ -31,8 +31,8 @@ if not(which("ffmpeg")):
 pa=pyaudio.PyAudio() #create the pyaudio class
 
 #should give us a chunk every .1sec IMPORTANT TO DURATION CALCS DON"T CHANGE
-SRATE=44100
-CHUNK=4410
+SRATE=48000
+CHUNK=4800
 CNKTIM=0.1
 
 #CHANGABLE GLOBAL VARS
