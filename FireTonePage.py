@@ -31,8 +31,8 @@ if not(which("ffmpeg")):
 pa=pyaudio.PyAudio() #create the pyaudio class
 
 #should give us a chunk every .1sec IMPORTANT TO DURATION CALCS DON"T CHANGE
-SRATE=48000
-CHUNK=4800
+SRATE=44100
+CHUNK=4410
 CNKTIM=0.1
 
 #CHANGABLE GLOBAL VARS
@@ -300,7 +300,7 @@ stream=pa.open(
     rate=SRATE,
     output=False,
     input=True,
-    #input_device_index=2, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
+    input_device_index=8, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
     frames_per_buffer=CHUNK)
 
 # start listening
