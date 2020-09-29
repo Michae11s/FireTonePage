@@ -63,7 +63,7 @@ context = ssl.create_default_context()
 #"6032194143@vzwpix.com"
 
 class toneSet(object):
-    def __init__(self, name="default", tonesA=[1100,.6], tonesB=[640,.8], amrEmails=["6032192080@vzwpix.com","kk9michaels@gmail.com","6032194143@vzwpix.com"], txtEmails=[], mp3Emails=["kk9michaels@gmail.com"], rDelay=0.0, DeadSpace=5.0):
+    def __init__(self, name="default", tonesA=[1100,.6], tonesB=[640,.8], amrEmails=["6032192080@vzwpix.com","kk9michaels@gmail.com"], txtEmails=[], mp3Emails=["kk9michaels@gmail.com"], rDelay=0.0, DeadSpace=5.0):
         #Vals from arguments
         self.name=name                      # tone set name, things such as Chichester Fire, Tritown Ambulance, etc
         self.tones=[tonesA, tonesB]         # list of tone lists, tones will be in format [freq, duration]
@@ -310,7 +310,7 @@ stream=pa.open(
     rate=SRATE,
     output=False,
     input=True,
-    input_device_index=6, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
+    input_device_index=7, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
     frames_per_buffer=CHUNK*4)
 
 # start listening
