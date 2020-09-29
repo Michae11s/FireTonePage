@@ -180,7 +180,7 @@ class toneSet(object):
             elif (self.rDeadSpace==self.timeZ): #no audio and we aren't already keeping track of rDeadSpace
                 self.rDeadSpace=now
             elif((now-self.rDeadSpace).total_seconds() > self.maxDeadSpace): #see if current time is max deadspace then stop recording
-                self.stopRecord()
+                thread.start_new_thread(self.stopRecord())
 
     def stopRecord(self):
         self.recording=False #change the recording flag
@@ -337,10 +337,7 @@ while True:
         quit()
     except OSError as err:
         logging.error("OS error: {0}".format(err))
+        logging.error("==== Exiting =====")
         stream.close()
         pa.terminate()
         quit()
-
-#exit cleanly
-stream.close()
-pa.terminate()
