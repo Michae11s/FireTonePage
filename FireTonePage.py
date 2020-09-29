@@ -307,7 +307,7 @@ stream=pa.open(
     output=False,
     input=True,
     #input_device_index=6, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
-    frames_per_buffer=CHUNK)
+    frames_per_buffer=CHUNK*16)
 
 # start listening
 stream.start_stream()
@@ -317,18 +317,29 @@ logging.warning("stream started, Running...")
 departments=holdTones()
 
 while True:
-    global toneSets
-    global tonesChecked
-    data = stream.read(CHUNK) # read from our buffer
-    rnFreq=toneDetect(data, SRATE) # run the fft to get the peak frequency
-    if not(rnFreq==0.0): #lets print to terminal if something broke the squelch
-        logging.debug(rnFreq)
+    try:
+        global toneSets
+        global tonesChecked
+        data = stream.read(CHUNK) # read from our buffer
+        rnFreq=toneDetect(data, SRATE) # run the fft to get the peak frequency
+        if not(rnFreq==0.0): #lets print to terminal if something broke the squelch
+            logging.debug(rnFreq)
 
-    #need this to run every chunk, as this handles both detection and recording for the tones
-    for department in departments.toneSets():
-        department.eval(rnFreq, data)
+        #need this to run every chunk, as this handles both detection and recording for the tones
+        for department in departments.toneSets():
+            department.eval(rnFreq, data)
 
-    departments.update()
+        departments.update()
+    except KeyboardInterrupt:
+        logging.error("=====Exiting Cleanly=====")
+        stream.close()
+        pa.terminate()
+        quit()
+    except OSError as err:
+        logging.error("OS error: {0}".format(err))
+        stream.close()
+        pa.terminate()
+        quit()
 
 #exit cleanly
 stream.close()
