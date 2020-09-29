@@ -63,11 +63,11 @@ context = ssl.create_default_context()
 #"6032194143@vzwpix.com"
 
 class toneSet(object):
-    def __init__(self, name="default", tonesA=[1100,.6], tonesB=[640,.8], amrEmails=["6032192080@vzwpix.com","kk9michaels@gmail.com"], txtEmails=[], mp3Emails=["kk9michaels@gmail.com"], rDelay=0.0, DeadSpace=5.0):
+    def __init__(self, name="default", tonesA=[1100,.6], tonesB=[640,.8], mmsEmails=["6032192080@vzwpix.com","kk9michaels@gmail.com"], txtEmails=[], mp3Emails=["kk9michaels@gmail.com"], rDelay=0.0, DeadSpace=5.0):
         #Vals from arguments
         self.name=name                      # tone set name, things such as Chichester Fire, Tritown Ambulance, etc
         self.tones=[tonesA, tonesB]         # list of tone lists, tones will be in format [freq, duration]
-        self.amr=amrEmails                  # list of emails to recieve AMR files, (phone numbers)
+        self.mms=mmsEmails                  # list of emails to recieve mms messages, (phone numbers)
         self.txt=txtEmails                  # list of emails to revieve pre-alert messages
         self.mp3=mp3Emails                  # list of emails to recieve MP3 files
         self.rDelay=rDelay                  # recording delay
@@ -87,7 +87,12 @@ class toneSet(object):
     #### INTERNAL METHODS ####
     # Return a fileName with a givene extension in a certain directory
     def fileName(self, type="wav"):
-        return (type.upper() + "/" + self.name + "_" + self.rstart.strftime("%m%d%y-%H%M%S") + "." + type)
+        if type == "mp3":
+            ext="mp3"
+        else:
+            ext="wav"
+
+        return (type.upper() + "/" + self.name + "_" + self.rstart.strftime("%m%d%y-%H%M%S") + "." + ext)
 
     # Reset the detection variables
     def reset(self):
@@ -124,7 +129,7 @@ class toneSet(object):
         # if we made it to here we failed to fully detect a tone so exit without a recognition
         return False
 
-    def sendEmails(self, type): #type can be "pre" "mp3" "amr"
+    def sendEmails(self, type): #type can be "pre" "mp3" "mms"
         #Setup the email
         subject= "[TONE] " + self.name
         body= "Page recieved for: " + self.name + "\n at " + self.rstart.strftime("%H:%M:%S on %m/%d/%y")
@@ -137,13 +142,9 @@ class toneSet(object):
         #differentiate base on type
         if (type=="pre"):
             elist=self.txt
-        else:
-            if(type=="mp3"):
-                elist=self.mp3
-                fname=self.fileName("mp3")
-            else:
-                elist=self.amr
-                fname=self.fileName("amr")
+        elif (type=="mp3"):
+            elist=self.mp3
+            fname=self.fileName("mp3")
             with open(fname, 'rb') as attachment:
                 part = MIMEBase("application", "octet-stream")
                 part.set_payload(attachment.read())
@@ -153,17 +154,21 @@ class toneSet(object):
                 f"attachment; filename= {fname[4:]}",
             )
             message.attach(part)
+        elif (type=="mms"):
+            elist=self.mms
+            f=open(self.fileName("mms"), 'rb')
+            message.attach(MIMEAudio(fp.read()))
 
-        #send the emails
-        with smtplib.SMTP_SSL(SERVER, PORT, context=context) as server:
-            server.login(ADDR, PWORD)
-            for recipient in elist:
-                message["Bcc"] = recipient
-                text=message.as_string()
-                server.sendmail(ADDR, recipient, text)
+        if elist:
+            #send the emails
+            text=message.as_string()
+            with smtplib.SMTP_SSL(SERVER, PORT, context=context) as server:
+                server.login(ADDR, PWORD)
+                server.sendmail(ADDR, elist, text)
 
-        logging.info("EMAILS SENT:" + type.upper())
-        #SEND EMAILS HERE
+            logging.info("EMAILS SENT:" + type.upper())
+        else:
+            logging.info("NO EMAILS TO SEND OF TYPE: " + type.upper())
 
     def startRecord(self):
         self.frames=[] #make sure our buffer is empty, nothing left over
@@ -202,9 +207,9 @@ class toneSet(object):
         hold.export(self.fileName("mp3"), format="mp3")
         logging.info("MP3 generated:" + self.fileName("mp3"))
         self.sendEmails("mp3")
-        hold.export(self.fileName("amr"), format="amr", parameters=["-ar", "8000", "-ab", "12.2k"])
-        logging.info("AMR generated:" + self.fileName("amr"))
-        self.sendEmails("amr")
+        hold.export(self.fileName("mms"), format="wav", parameters=["-ar", "8000", "-ab", "12.2k"])
+        logging.info("MMS generated:" + self.fileName("MMS"))
+        self.sendEmails("mms")
 
         #clear out our recording buffer
         self.frames=[]
@@ -248,19 +253,19 @@ class holdTones():
                 _mDS=float(d.find("maxDeadSpace").text)
                 _txtEmail=[]
                 _mp3Email=[]
-                _amrEmail=[]
+                _mmsEmail=[]
                 for email in d.find("txtEmails"):
                     _txtEmail.append(email.text)
                 for email in d.find("mp3Emails"):
                     _mp3Email.append(email.text)
-                for email in d.find("amrEmails"):
-                    _amrEmail.append(email.text)
+                for email in d.find("MMS_Emails"):
+                    _mmsEmail.append(email.text)
 
                 tones.append(toneSet(
                     _nam,
                     _toneA,
                     _toneB,
-                    _amrEmail,
+                    _mmsEmail,
                     _txtEmail,
                     _mp3Email,
                     _rDelay,
@@ -310,7 +315,7 @@ stream=pa.open(
     rate=SRATE,
     output=False,
     input=True,
-    input_device_index=7, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
+    #input_device_index=7, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
     frames_per_buffer=CHUNK*4)
 
 # start listening
@@ -333,9 +338,9 @@ while True:
         for department in departments.toneSets():
             department.eval(rnFreq, data)
 
-        departments.update()
+        _thread.start_new_thread(departments.update,())
     except KeyboardInterrupt:
-        logging.error("=====Exiting Cleanly=====")
+        logging.error("=====Keyboard Interupt::Exiting Cleanly=====")
         stream.close()
         pa.terminate()
         quit()

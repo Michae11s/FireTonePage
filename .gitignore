@@ -129,14 +129,16 @@ dmypy.json
 .pyre/
 
 # extra ignores for this program
-AMR/*
+MMS/*
 MP3/*
 WAV/*
 ffmpeg.exe
 tones.xml
 config.xml
+temp.py
+temp2.py
 
 # exceptions
-!AMR/.gitkeep
+!MMS/.gitkeep
 !MP3/.gitkeep
 !WAV/.gitkeep
