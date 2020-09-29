@@ -13,6 +13,7 @@ import xml.etree.ElementTree as ET
 import smtplib
 import ssl
 import email
+import logging
 
 from email import encoders
 from email.mime.base import MIMEBase
@@ -23,9 +24,16 @@ from pydub import AudioSegment as ast
 from pydub.utils import which
 from datetime import datetime as dt
 
+logging.basicConfig(
+    format='%(asctime)-19s:%(levelname)s:%(message)s',
+    level=logging.DEBUG,
+    datefmt='%Y-%m-%d|%H:%M:%S',
+    filename='debug.log')
+logging.warning("=====Fire Tone Page Starting=====")
+
 #make sure ffmpeg is accessible, since I don't care for the user case w/o ffmpeg its mandatory
 if not(which("ffmpeg")):
-    print("FFMPEG NOT FOUND! EXITING...")
+    logging.warning("FFMPEG NOT FOUND! EXITING...")
     exit()
 
 pa=pyaudio.PyAudio() #create the pyaudio class
@@ -42,8 +50,6 @@ TLRNC = .01 #tone tolerance, percentage was a tone can be and still be recognize
 #NON EDITABLE GLOBAL VARS
 FORMAT=pyaudio.paInt16
 
-#EMAIL VARS
-#### TODO, IMPORT THEM #####
 #Import Email settings (basically setup for ssl gmail)
 tee=ET.parse("config.xml")
 root=tee.getroot()
@@ -54,6 +60,7 @@ ADDR=email.find("account").text
 PWORD=email.find("pword").text
 context = ssl.create_default_context()
 #"6032194143@vzwpix.com"
+
 class toneSet(object):
     def __init__(self, name="default", tonesA=[1100,.6], tonesB=[640,.8], amrEmails=["6032192080@vzwpix.com","kk9michaels@gmail.com","6032194143@vzwpix.com"], txtEmails=[], mp3Emails=["kk9michaels@gmail.com"], rDelay=0.0, DeadSpace=5.0):
         #Vals from arguments
@@ -87,19 +94,18 @@ class toneSet(object):
 
     def check(self, freq): #pass the current fft freq, return true if this creates a total match meaning we have detected a tone
         if np.isclose(freq, self.tones[0][0], TLRNC): #are we matching tone A?
-                #print("ToneA recognized")
+                #logging.debug("ToneA recognized")
                 self.clen[0] += CNKTIM
-                # print(self.clen[0])
                 if(self.clen[0] >= self.tones[0][1]): #toneA detected successfully, met required time
                     self.toneA=True
                     self.clen[2]=0.0
-                    # print("detected A successfully")
+                    #logging.debug("detected A successfully")
         elif self.toneA: #we have already verified A tone
             if np.isclose(freq, self.tones[1][0], TLRNC): #is the current freq B tone
                 self.clen[1]+=CNKTIM
                 self.clen[2]=0.0
                 if (self.clen[1] >= self.tones[1][1]): #have we met the time length, detect the tone
-                    print("Tone Detected: " + self.name)
+                    logging.info("Tone Detected: " + self.name)
                     self.reset()
                     return True
             elif np.isclose(freq, self.tones[0][0], TLRNC): #still toneA lets do nothing
@@ -154,7 +160,7 @@ class toneSet(object):
                 text=message.as_string()
                 server.sendmail(ADDR, recipient, text)
 
-        print("EMAILS SENT:" + type.upper())
+        logging.info("EMAILS SENT:" + type.upper())
         #SEND EMAILS HERE
 
     def startRecord(self):
@@ -162,7 +168,7 @@ class toneSet(object):
         self.recording=True #flip the flag
         self.rstart=dt.now() #hold the time we started recording, so we can delay when we actually start recording
         #self.fileName= self.name + "-" + self.rstart.strftime("%m%d%y-%H%M%S")
-        print("recording started:" + self.fileName())
+        logging.info("recording started:" + self.fileName())
         self.sendEmails("pre") #lets send out the pre alert
 
     def record(self, data):
@@ -179,7 +185,7 @@ class toneSet(object):
     def stopRecord(self):
         self.recording=False #change the recording flag
         self.frames = self.frames[:-(int((self.maxDeadSpace*10)-30))] #lets subtract the deadspace, which is time*(frames/sec==10)
-        print("Stopped Recording: " + self.fileName("wav"))
+        logging.info("Stopped Recording: " + self.fileName("wav"))
 
         #lets actually writeout the file
         wf = wave.open(self.fileName("wav"), 'wb')
@@ -192,10 +198,10 @@ class toneSet(object):
         #now lets convert the wav into something useful
         hold=ast.from_wav(self.fileName("wav"))
         hold.export(self.fileName("mp3"), format="mp3")
-        print("MP3 generated:" + self.fileName("mp3"))
+        logging.info("MP3 generated:" + self.fileName("mp3"))
         self.sendEmails("mp3")
         hold.export(self.fileName("amr"), format="amr", parameters=["-ar", "8000", "-ab", "12.2k"])
-        print("AMR generated:" + self.fileName("amr"))
+        logging.info("AMR generated:" + self.fileName("amr"))
         self.sendEmails("amr")
 
         #clear out our recording buffer
@@ -227,7 +233,7 @@ class holdTones():
             try:
                 tree=ET.parse(self.Fname) #tones.xml exists, lets import
             except:
-                print("tones.xml import fails")
+                logging.warning("tones.xml import fails")
                 return tones
             root=tree.getroot()
             for d in root:
@@ -264,7 +270,7 @@ class holdTones():
         if (float(dt.now().strftime("%S.%f")) < 0.1):
             if os.path.exists(self.Fname):
                 if (dt.fromtimestamp(os.path.getmtime(self.Fname)) > self.lastChecked):
-                    print("reimporting departments")
+                    logging.info("reimporting departments")
                     self.lastChecked = dt.now()
                     self.tones=self.ImportTones()
 
@@ -300,12 +306,12 @@ stream=pa.open(
     rate=SRATE,
     output=False,
     input=True,
-    input_device_index=8, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
+    #input_device_index=6, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
     frames_per_buffer=CHUNK)
 
 # start listening
 stream.start_stream()
-print("stream started, Running...")
+logging.warning("stream started, Running...")
 
 # CREATE TONE SETS
 departments=holdTones()
@@ -316,7 +322,7 @@ while True:
     data = stream.read(CHUNK) # read from our buffer
     rnFreq=toneDetect(data, SRATE) # run the fft to get the peak frequency
     if not(rnFreq==0.0): #lets print to terminal if something broke the squelch
-        print(rnFreq)
+        logging.debug(rnFreq)
 
     #need this to run every chunk, as this handles both detection and recording for the tones
     for department in departments.toneSets():
