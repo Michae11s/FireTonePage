@@ -171,7 +171,7 @@ class toneSet(object):
         self.rstart=dt.now() #hold the time we started recording, so we can delay when we actually start recording
         #self.fileName= self.name + "-" + self.rstart.strftime("%m%d%y-%H%M%S")
         logging.info("recording started:" + self.fileName())
-        self.sendEmails("pre") #lets send out the pre alert
+        _thread.start_new_thread(self.sendEmails,("pre",)) #lets send out the pre alert
 
     def record(self, data):
         now=dt.now()
