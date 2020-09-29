@@ -315,7 +315,7 @@ stream=pa.open(
     rate=SRATE,
     output=False,
     input=True,
-    #input_device_index=7, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
+    input_device_index=7, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
     frames_per_buffer=CHUNK*4)
 
 # start listening
@@ -329,7 +329,7 @@ while True:
     try:
         global toneSets
         global tonesChecked
-        data = stream.read(CHUNK) # read from our buffer
+        data = stream.read(CHUNK, exception_on_overflow=False) # read from our buffer
         rnFreq=toneDetect(data, SRATE) # run the fft to get the peak frequency
         if not(rnFreq==0.0): #lets print to terminal if something broke the squelch
             logging.info(rnFreq)
