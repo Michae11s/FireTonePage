@@ -14,6 +14,7 @@ import smtplib
 import ssl
 import email
 import logging
+import _thread
 
 from email import encoders
 from email.mime.base import MIMEBase
@@ -180,7 +181,7 @@ class toneSet(object):
             elif (self.rDeadSpace==self.timeZ): #no audio and we aren't already keeping track of rDeadSpace
                 self.rDeadSpace=now
             elif((now-self.rDeadSpace).total_seconds() > self.maxDeadSpace): #see if current time is max deadspace then stop recording
-                thread.start_new_thread(self.stopRecord())
+                _thread.start_new_thread(self.stopRecord,())
 
     def stopRecord(self):
         self.recording=False #change the recording flag
@@ -306,12 +307,12 @@ stream=pa.open(
     rate=SRATE,
     output=False,
     input=True,
-    #input_device_index=6, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
+    input_device_index=6, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
     frames_per_buffer=CHUNK*16)
 
 # start listening
 stream.start_stream()
-logging.warning("stream started, Running...")
+_thread.start_new_thread(logging.warning,("stream started, Running...",))
 
 # CREATE TONE SETS
 departments=holdTones()
