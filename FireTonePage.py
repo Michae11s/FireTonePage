@@ -27,7 +27,7 @@ from datetime import datetime as dt
 
 logging.basicConfig(
     format='%(asctime)-19s:%(levelname)s:%(message)s',
-    level=logging.DEBUG,
+    level=logging.INFO,
     datefmt='%Y-%m-%d|%H:%M:%S',
     filename='debug.log')
 logging.warning("=====Fire Tone Page Starting=====")
@@ -75,6 +75,7 @@ class toneSet(object):
 
         #Preset Vals
         self.recording=False                # var to hold current recording state
+        self.stopping=False
         self.toneA=False                    # Holds whether we've recognized tone A yet or not
         self.clen=[0.0,0.0,0.0]             # Holds in order, amount of time recognized A, time recognized B, time w/no recognition
         self.toneto=0.5                     # amount of time after which we reset if no tones have be recognized, correlates w/ clen[2]
@@ -180,11 +181,11 @@ class toneSet(object):
                 self.rDeadSpace=self.timeZ
             elif (self.rDeadSpace==self.timeZ): #no audio and we aren't already keeping track of rDeadSpace
                 self.rDeadSpace=now
-            elif((now-self.rDeadSpace).total_seconds() > self.maxDeadSpace): #see if current time is max deadspace then stop recording
+            elif((now-self.rDeadSpace).total_seconds() > self.maxDeadSpace) and not(self.stopping): #see if current time is max deadspace then stop recording
+                self.stopping=True
                 _thread.start_new_thread(self.stopRecord,())
 
     def stopRecord(self):
-        self.recording=False #change the recording flag
         self.frames = self.frames[:-(int((self.maxDeadSpace*10)-30))] #lets subtract the deadspace, which is time*(frames/sec==10)
         logging.info("Stopped Recording: " + self.fileName("wav"))
 
@@ -207,6 +208,8 @@ class toneSet(object):
 
         #clear out our recording buffer
         self.frames=[]
+        self.recording=False
+        slef.stopping=False
 
     #### Methods to be called externally ####
 
@@ -307,8 +310,8 @@ stream=pa.open(
     rate=SRATE,
     output=False,
     input=True,
-    input_device_index=6, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
-    frames_per_buffer=CHUNK*16)
+    #input_device_index=6, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
+    frames_per_buffer=CHUNK*4)
 
 # start listening
 stream.start_stream()
@@ -324,7 +327,7 @@ while True:
         data = stream.read(CHUNK) # read from our buffer
         rnFreq=toneDetect(data, SRATE) # run the fft to get the peak frequency
         if not(rnFreq==0.0): #lets print to terminal if something broke the squelch
-            logging.debug(rnFreq)
+            logging.info(rnFreq)
 
         #need this to run every chunk, as this handles both detection and recording for the tones
         for department in departments.toneSets():
