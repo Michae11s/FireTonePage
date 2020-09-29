@@ -209,7 +209,7 @@ class toneSet(object):
         #clear out our recording buffer
         self.frames=[]
         self.recording=False
-        slef.stopping=False
+        self.stopping=False
 
     #### Methods to be called externally ####
 
@@ -310,7 +310,7 @@ stream=pa.open(
     rate=SRATE,
     output=False,
     input=True,
-    #input_device_index=6, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
+    input_device_index=6, #Comment out for linux to use the default device, since pyaudio/portaudio doesn't talk direct to pulseaudio
     frames_per_buffer=CHUNK*4)
 
 # start listening
