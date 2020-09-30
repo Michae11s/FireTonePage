@@ -328,7 +328,7 @@ stream=pa.open(
     output=False,
     input=True,
     input_device_index=7, #Comment out for Windows to use the default device (use python -m sounddevice to find this index number)
-    frames_per_buffer=CHUNK)
+    frames_per_buffer=CHUNK*20)
 
 # start listening
 stream.start_stream()
@@ -343,9 +343,9 @@ while True:
         #loop time
         ntime=dt.now()
         logging.debug((ntime-ltime).total_seconds())
-        ltime=dt.now()
 
         data = stream.read(CHUNK, exception_on_overflow=True) # read from our buffer
+        ltime=dt.now()
         rnFreq=toneDetect(data, SRATE) # run the fft to get the peak frequency
         if not(rnFreq==0.0): #lets print to terminal if something broke the squelch
             logging.info(rnFreq)
