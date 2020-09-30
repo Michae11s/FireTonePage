@@ -28,7 +28,7 @@ from datetime import datetime as dt
 
 logging.basicConfig(
     format='%(asctime)-19s:%(levelname)s:%(message)s',
-    level=logging.DEBUG,
+    level=logging.INFO,
     datefmt='%Y-%m-%d|%H:%M:%S',
     filename='debug.log')
 logging.warning("=====Fire Tone Page Starting=====")
@@ -328,7 +328,7 @@ stream=pa.open(
     output=False,
     input=True,
     input_device_index=7, #Comment out for Windows to use the default device (use python -m sounddevice to find this index number)
-    frames_per_buffer=CHUNK*20)
+    frames_per_buffer=CHUNK)
 
 # start listening
 stream.start_stream()
@@ -344,7 +344,7 @@ while True:
         # ntime=dt.now()
         # logging.debug((ntime-ltime).total_seconds())
 
-        data = stream.read(CHUNK, exception_on_overflow=True) # read from our buffer
+        data = stream.read(CHUNK, exception_on_overflow=False) # read from our buffer
         # ltime=dt.now()
         rnFreq=toneDetect(data, SRATE) # run the fft to get the peak frequency
         if not(rnFreq==0.0): #lets print to terminal if something broke the squelch
