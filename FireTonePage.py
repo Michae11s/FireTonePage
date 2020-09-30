@@ -28,7 +28,7 @@ from datetime import datetime as dt
 
 logging.basicConfig(
     format='%(asctime)-19s:%(levelname)s:%(message)s',
-    level=logging.INFO,
+    level=logging.DEBUG,
     datefmt='%Y-%m-%d|%H:%M:%S',
     filename='debug.log')
 logging.warning("=====Fire Tone Page Starting=====")
@@ -328,7 +328,7 @@ stream=pa.open(
     output=False,
     input=True,
     input_device_index=7, #Comment out for Windows to use the default device (use python -m sounddevice to find this index number)
-    frames_per_buffer=CHUNK*4)
+    frames_per_buffer=CHUNK)
 
 # start listening
 stream.start_stream()
@@ -337,10 +337,14 @@ _thread.start_new_thread(logging.warning,("stream started, Running...",))
 # CREATE TONE SETS
 departments=holdTones()
 
+ltime=dt.now()
 while True:
     try:
-        global toneSets
-        global tonesChecked
+        #loop time
+        ntime=dt.now()
+        logging.debug((ntime-ltime).total_seconds())
+        ltime=dt.now()
+
         data = stream.read(CHUNK, exception_on_overflow=True) # read from our buffer
         rnFreq=toneDetect(data, SRATE) # run the fft to get the peak frequency
         if not(rnFreq==0.0): #lets print to terminal if something broke the squelch
@@ -353,12 +357,16 @@ while True:
         _thread.start_new_thread(departments.update,())
     except KeyboardInterrupt:
         logging.error("=====Keyboard Interupt::Exiting Cleanly=====")
+        for department in departments.toneSets():
+            department.stopRecord()
         stream.close()
         pa.terminate()
         quit()
     except OSError as err:
         logging.error("OS error: {0}".format(err))
         logging.error("==== Exiting =====")
+        for department in departments.toneSets():
+            department.stopRecord()
         stream.close()
         pa.terminate()
         quit()
