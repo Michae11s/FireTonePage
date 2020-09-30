@@ -42,7 +42,8 @@ pa=pyaudio.PyAudio() #create the pyaudio class
 
 #should give us a chunk every .1sec IMPORTANT TO DURATION CALCS DON"T CHANGE
 SRATE=44100
-CHUNK=4410
+#CHUNK=4410
+CHUNK=8820
 CNKTIM=CHUNK/SRATE
 
 #CHANGABLE GLOBAL VARS
