@@ -91,8 +91,10 @@ class toneSet(object):
     def fileName(self, type="wav"):
         if type == "mp3":
             ext="mp3"
-        else:
+        elif type == "wav":
             ext="wav"
+        else:
+            ext="amr"
 
         return (type.upper() + "/" + self.cname + "_" + self.rstart.strftime("%m%d%y-%H%M%S") + "." + ext)
 
@@ -153,13 +155,21 @@ class toneSet(object):
             encoders.encode_base64(part)
             part.add_header(
                 "Content-Disposition",
-                f"attachment; filename= {fname[4:]}",
+                f"attachment; filename={fname[4:]}",
             )
             message.attach(part)
         elif (type=="mms"):
             elist=self.mms
-            f=open(self.fileName("mms"), 'rb')
-            message.attach(MIMEAudio(f.read()))
+            fname=self.fileName("mms")
+            with open(fname, 'rb') as attachment:
+                part = MIMEBase("application", "octet-stream")
+                part.set_payload(attachment.read())
+            encoders.encode_base64(part)
+            part.add_header(
+                "Content-Disposition",
+                f"attachment; filename={fname[4:]}",
+            )
+            message.attach(part)
 
         if elist:
             #send the emails
@@ -209,7 +219,7 @@ class toneSet(object):
         hold.export(self.fileName("mp3"), format="mp3")
         logging.info("MP3 generated:" + self.fileName("mp3"))
         self.sendEmails("mp3")
-        hold.export(self.fileName("mms"), format="wav", parameters=["-ar", "8000", "-ab", "12.2k"])
+        hold.export(self.fileName("mms"), format="amr", parameters=["-ar", "8000", "-ab", "12.2k"])
         logging.info("MMS generated:" + self.fileName("MMS"))
         self.sendEmails("mms")
 
