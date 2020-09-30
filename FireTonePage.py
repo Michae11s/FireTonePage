@@ -337,15 +337,15 @@ _thread.start_new_thread(logging.warning,("stream started, Running...",))
 # CREATE TONE SETS
 departments=holdTones()
 
-ltime=dt.now()
+# ltime=dt.now()
 while True:
     try:
         #loop time
-        ntime=dt.now()
-        logging.debug((ntime-ltime).total_seconds())
+        # ntime=dt.now()
+        # logging.debug((ntime-ltime).total_seconds())
 
         data = stream.read(CHUNK, exception_on_overflow=True) # read from our buffer
-        ltime=dt.now()
+        # ltime=dt.now()
         rnFreq=toneDetect(data, SRATE) # run the fft to get the peak frequency
         if not(rnFreq==0.0): #lets print to terminal if something broke the squelch
             logging.info(rnFreq)
