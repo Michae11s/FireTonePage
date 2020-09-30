@@ -72,8 +72,8 @@ class toneSet(object):
         self.mms=mmsEmails                  # list of emails to recieve mms messages, (phone numbers)
         self.txt=txtEmails                  # list of emails to revieve pre-alert messages
         self.mp3=mp3Emails                  # list of emails to recieve MP3 files
-        self.rDelay=rDelay                  # recording delay
-        self.maxDeadSpace=DeadSpace         # maximum amount of deadspace after which we stop recording
+        self.rDelay=0.0                      # recording delay
+        self.maxDeadSpace=5.0        # maximum amount of deadspace after which we stop recording
         self.cname=name.strip().replace(" ", "-").replace("/", "-")
 
         #Preset Vals
@@ -86,6 +86,7 @@ class toneSet(object):
         self.frames=[]                      # hold recording of current audio frames to write out to wav
         self.timeZ=dt.utcfromtimestamp(0)   # reference datetime to use as null comparison
         self.rDeadSpace=self.timeZ     # ammount of DeadSpace we have seen so far
+        self.rstart=self.timeZ
 
     #### INTERNAL METHODS ####
     # Return a fileName with a givene extension in a certain directory
@@ -103,6 +104,7 @@ class toneSet(object):
     def reset(self):
         self.clen=[0.0,0.0,0.0]
         self.toneA=False
+
 
     def check(self, freq): #pass the current fft freq, return true if this creates a total match meaning we have detected a tone
         if np.isclose(freq, self.tones[0][0], TLRNC): #are we matching tone A?
@@ -200,6 +202,7 @@ class toneSet(object):
             elif (self.rDeadSpace==self.timeZ): #no audio and we aren't already keeping track of rDeadSpace
                 self.rDeadSpace=now
             elif((now-self.rDeadSpace).total_seconds() > self.maxDeadSpace) and not(self.stopping): #see if current time is max deadspace then stop recording
+                self.rDeadSpace=self.timeZ
                 self.stopping=True
                 _thread.start_new_thread(self.stopRecord,())
 
@@ -225,6 +228,7 @@ class toneSet(object):
         self.sendEmails("mms")
 
         #clear out our recording buffer
+        self.rDeadSpace=self.timeZ
         self.frames=[]
         self.recording=False
         self.stopping=False
@@ -355,7 +359,7 @@ while True:
         for department in departments.toneSets():
             _thread.start_new_thread(department.eval,(rnFreq, data))
 
-        _thread.start_new_thread(departments.update,())
+        departments.update()
     except KeyboardInterrupt:
         logging.error("=====Keyboard Interupt::Exiting Cleanly=====")
         for department in departments.toneSets():
