@@ -348,7 +348,7 @@ while True:
 
         #need this to run every chunk, as this handles both detection and recording for the tones
         for department in departments.toneSets():
-            _thread.start_new_thread(department.eval(rnFreq, data))
+            _thread.start_new_thread(department.eval,(rnFreq, data))
 
         _thread.start_new_thread(departments.update,())
     except KeyboardInterrupt:
