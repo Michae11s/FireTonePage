@@ -20,6 +20,7 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.audio import MIMEAudio
 
 from pydub import AudioSegment as ast
 from pydub.utils import which
@@ -72,6 +73,7 @@ class toneSet(object):
         self.mp3=mp3Emails                  # list of emails to recieve MP3 files
         self.rDelay=rDelay                  # recording delay
         self.maxDeadSpace=DeadSpace         # maximum amount of deadspace after which we stop recording
+        self.cname=name.strip().replace(" ", "-").replace("/", "-")
 
         #Preset Vals
         self.recording=False                # var to hold current recording state
@@ -92,7 +94,7 @@ class toneSet(object):
         else:
             ext="wav"
 
-        return (type.upper() + "/" + self.name + "_" + self.rstart.strftime("%m%d%y-%H%M%S") + "." + ext)
+        return (type.upper() + "/" + self.cname + "_" + self.rstart.strftime("%m%d%y-%H%M%S") + "." + ext)
 
     # Reset the detection variables
     def reset(self):
@@ -157,7 +159,7 @@ class toneSet(object):
         elif (type=="mms"):
             elist=self.mms
             f=open(self.fileName("mms"), 'rb')
-            message.attach(MIMEAudio(fp.read()))
+            message.attach(MIMEAudio(f.read()))
 
         if elist:
             #send the emails
@@ -242,7 +244,7 @@ class holdTones():
             try:
                 tree=ET.parse(self.Fname) #tones.xml exists, lets import
             except:
-                logging.warning("tones.xml import fails")
+                logging.error("tones.xml import fails")
                 return tones
             root=tree.getroot()
             for d in root:
