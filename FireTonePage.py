@@ -358,7 +358,8 @@ while True:
     except KeyboardInterrupt:
         logging.error("=====Keyboard Interupt::Exiting Cleanly=====")
         for department in departments.toneSets():
-            department.stopRecord()
+            if department.recording:
+                department.stopRecord()
         stream.close()
         pa.terminate()
         quit()
@@ -366,7 +367,8 @@ while True:
         logging.error("OS error: {0}".format(err))
         logging.error("==== Exiting =====")
         for department in departments.toneSets():
-            department.stopRecord()
+            if department.recording:
+                department.stopRecord()
         stream.close()
         pa.terminate()
         quit()
