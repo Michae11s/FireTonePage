@@ -43,11 +43,11 @@ pa=pyaudio.PyAudio() #create the pyaudio class
 #should give us a chunk every .1sec IMPORTANT TO DURATION CALCS DON"T CHANGE
 SRATE=44100
 #CHUNK=4410
-CHUNK=8820
+CHUNK=4410
 CNKTIM=CHUNK/SRATE
 
 #CHANGABLE GLOBAL VARS
-SQUELCH=0.02 #RMS valued squelch
+SQUELCH=0.01 #RMS valued squelch
 TLRNC = .01 #tone tolerance, percentage was a tone can be and still be recognized
 
 #NON EDITABLE GLOBAL VARS
@@ -73,7 +73,7 @@ class toneSet(object):
         self.txt=txtEmails                  # list of emails to revieve pre-alert messages
         self.mp3=mp3Emails                  # list of emails to recieve MP3 files
         self.rDelay=0.0                      # recording delay
-        self.maxDeadSpace=5.0        # maximum amount of deadspace after which we stop recording
+        self.maxDeadSpace=10.0        # maximum amount of deadspace after which we stop recording
         self.cname=name.strip().replace(" ", "-").replace("/", "-")
 
         #Preset Vals
@@ -332,7 +332,7 @@ stream=pa.open(
     rate=SRATE,
     output=False,
     input=True,
-    input_device_index=7, #Comment out for Windows to use the default device (use python -m sounddevice to find this index number)
+    input_device_index=8, #Comment out for Windows to use the default device (use python -m sounddevice to find this index number)
     frames_per_buffer=CHUNK)
 
 # start listening
@@ -349,7 +349,7 @@ while True:
         # ntime=dt.now()
         # logging.debug((ntime-ltime).total_seconds())
 
-        data = stream.read(CHUNK, exception_on_overflow=False) # read from our buffer
+        data = stream.read(CHUNK, exception_on_overflow=True) # read from our buffer
         # ltime=dt.now()
         rnFreq=toneDetect(data, SRATE) # run the fft to get the peak frequency
         if not(rnFreq==0.0): #lets print to terminal if something broke the squelch
