@@ -40,7 +40,7 @@ if not(which("ffmpeg")):
 
 pa=pyaudio.PyAudio() #create the pyaudio class
 
-#should give us a chunk every .1sec IMPORTANT TO DURATION CALCS DON"T CHANGE
+#should give us a chunk every .1sec
 SRATE=44100
 #CHUNK=4410
 CHUNK=4410
@@ -52,10 +52,16 @@ TLRNC = .01 #tone tolerance, percentage was a tone can be and still be recognize
 
 #NON EDITABLE GLOBAL VARS
 FORMAT=pyaudio.paInt16
-
-#Import Email settings (basically setup for ssl gmail)
+DEVICE=8
+#load config.xml
 tee=ET.parse("config.xml")
 root=tee.getroot()
+#import audio settings
+_audio=root.find("audio")
+DEVICE=int(_audio.find("device").text)
+SQUELCH=float(_audio.find('squelch').text)
+TLRNC=float(_audio.find('tolerance').text)
+#Import Email settings (basically setup for ssl gmail)
 email=root.find("Email")
 SERVER=email.find("server").text
 PORT=email.find("server").get("port")
@@ -332,7 +338,7 @@ stream=pa.open(
     rate=SRATE,
     output=False,
     input=True,
-    input_device_index=8, #Comment out for Windows to use the default device (use python -m sounddevice to find this index number)
+    input_device_index=DEVICE, #(use python -m sounddevice to find this index number)
     frames_per_buffer=CHUNK)
 
 # start listening
