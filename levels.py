@@ -30,7 +30,7 @@ stream=pa.open(
     rate=SRATE,
     output=False,
     input=True,
-    #input_device_index=7, #Comment out for Windows to use the default device (use python -m sounddevice to find this index number)
+    input_device_index=8, #Comment out for Windows to use the default device (use python -m sounddevice to find this index number)
     frames_per_buffer=CHUNK)
 
 stream.start_stream()
@@ -44,8 +44,8 @@ while True:
         data = stream.read(CHUNK, exception_on_overflow=False) # read from our buffer
         # ltime=dt.now()
         level=rms(data)
-        # if level>SQUELCH:
-        print(level)
+        if level>SQUELCH:
+            print(level)
 
         #need this to run every chunk, as this handles both detection and recording for the tones
     except KeyboardInterrupt:
