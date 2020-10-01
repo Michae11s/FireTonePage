@@ -47,7 +47,7 @@ CHUNK=4410
 CNKTIM=CHUNK/SRATE
 
 #CHANGABLE GLOBAL VARS
-SQUELCH=0.01 #RMS valued squelch
+SQUELCH=0.001 #RMS valued squelch
 TLRNC = .01 #tone tolerance, percentage was a tone can be and still be recognized
 
 #NON EDITABLE GLOBAL VARS
