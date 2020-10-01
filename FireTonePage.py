@@ -337,7 +337,7 @@ stream=pa.open(
 
 # start listening
 stream.start_stream()
-_thread.start_new_thread(logging.warning,("stream started, Running...",))
+logging.warning,("stream started, Running...",)
 
 # CREATE TONE SETS
 departments=holdTones()
