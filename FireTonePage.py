@@ -78,8 +78,10 @@ class toneSet(object):
         self.mms=mmsEmails                  # list of emails to recieve mms messages, (phone numbers)
         self.txt=txtEmails                  # list of emails to revieve pre-alert messages
         self.mp3=mp3Emails                  # list of emails to recieve MP3 files
-        self.rDelay=0.0                      # recording delay
-        self.maxDeadSpace=10.0        # maximum amount of deadspace after which we stop recording
+        self.rDelay=0.0                     # recording delay
+        self.maxDeadSpace=7.0               # maximum amount of deadspace after which we stop recording
+        self.rMaxRecord=100.0               # max recording time
+        self.rMinRecord=10.0                # min recording time
         self.cname=name.strip().replace(" ", "-").replace("/", "-")
 
         #Preset Vals
@@ -155,6 +157,7 @@ class toneSet(object):
         #differentiate base on type
         if (type=="pre"):
             elist=self.txt
+            message["Subject"]="[PRE-ALERT] " + self.name
         elif (type=="mp3"):
             elist=self.mp3
             fname=self.fileName("mp3")
@@ -203,14 +206,20 @@ class toneSet(object):
         now=dt.now()
         if ((now-self.rstart).total_seconds() > self.rDelay): #have we passed the recording delay
             self.frames.append(data) #reccord current chunk
-            if (rms(data) > SQUELCH): #if this chunk is above the squelch, reset deadspace timer
-                self.rDeadSpace=self.timeZ
-            elif (self.rDeadSpace==self.timeZ): #no audio and we aren't already keeping track of rDeadSpace
-                self.rDeadSpace=now
-            elif((now-self.rDeadSpace).total_seconds() > self.maxDeadSpace) and not(self.stopping): #see if current time is max deadspace then stop recording
-                self.rDeadSpace=self.timeZ
-                self.stopping=True
-                _thread.start_new_thread(self.stopRecord,())
+            if ((now-self.rstart).total_seconds() > (self.rDelay+self.rMinRecord)):
+                if (rms(data) > SQUELCH): #if this chunk is above the squelch, reset deadspace timer
+                    self.rDeadSpace=self.timeZ
+                elif (self.rDeadSpace==self.timeZ): #no audio and we aren't already keeping track of rDeadSpace
+                    self.rDeadSpace=now
+                elif((now-self.rDeadSpace).total_seconds() > self.maxDeadSpace) and not(self.stopping): #see if current time is max deadspace then stop recording
+                    self.rDeadSpace=self.timeZ
+                    self.stopping=True
+                    _thread.start_new_thread(self.stopRecord,())
+                if((now-self.rstart).total_seconds() > (self.rDelay+self.rMaxRecord)) and not(self.stopping):
+                    logging.warning("MAX RECORDING LENGTH REACHED, STOPPING")
+                    self.rDeadSpace=self.timeZ
+                    self.stopping=True
+                    _thread.start_new_thread(self.stopRecord,())
 
     def stopRecord(self):
         self.frames = self.frames[:-(int((self.maxDeadSpace*10)-30))] #lets subtract the deadspace, which is time*(frames/sec==10)
