@@ -80,7 +80,7 @@ class toneSet(object):
         self.mp3=mp3Emails                  # list of emails to recieve MP3 files
         self.rDelay=0.0                     # recording delay
         self.maxDeadSpace=7.0               # maximum amount of deadspace after which we stop recording
-        self.rMaxRecord=100.0               # max recording time
+        self.rMaxRecord=110.0               # max recording time
         self.rMinRecord=10.0                # min recording time
         self.cname=name.strip().replace(" ", "-").replace("/", "-")
 
