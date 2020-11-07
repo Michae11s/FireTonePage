@@ -1,0 +1,10 @@
+#!/bin/bash
+systemctl --user start pulseaudio
+pacmd load-module module-null-sink sink_name=Dummy
+pacmd set-default-sink Dummy
+pacmd set-default-source Dummy.monitor
+cd ~/build/gnuradio
+nohup python ./CAFMA.py &
+cd ~/build/FireTonePage
+nohup python3.6 FireTonePage.py &
+echo 0 | sudo tee /sys/class/backlight/intel_backlight/brightness 
